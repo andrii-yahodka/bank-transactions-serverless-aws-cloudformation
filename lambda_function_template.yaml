@@ -52,12 +52,9 @@ Resources:
           import json
 
           def handler(event, context):
-              request_body = json.loads(event['body'])
-              name = request_body.get('name')
-              print(f"Hello, {name}!")
               return {
                   'statusCode': 200,
-                  'body': json.dumps({'message': f"Hello, {name}!"})
+                  'body': 'Hello, world!'
               }
 
   LambdaPermission:
@@ -85,74 +82,11 @@ Resources:
         Types:
           - REGIONAL
 
-  AuthorizerLambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Join ["_", [Ref: "Prefix", "AuthorizerLambdaRole", Ref: "Env"]]
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-                - apigateway.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: !Join ["_", [Ref: "Prefix", "AuthorizerLambdaPolicy", Ref: "Env"]]
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Action: "lambda:InvokeFunction"
-                Effect: Allow
-                Resource: "*"
-
-  AuthorizerLambdaFunction:
-    DependsOn: 
-      - LambdaRole
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Join ["_", [Ref: "Prefix", "AuthorizerLambda", Ref: "Env"]]
-      Runtime: python3.8
-      MemorySize: 128
-      Role: !GetAtt LambdaRole.Arn
-      Handler: index.handler
-      Code:
-        ZipFile: |
-          def handler(event, context):
-            print(event)
-            
-            # validate the token
-            if event['authorizationToken'] == 'srikanth@1223334444':
-                auth = 'Allow'
-            else:
-                auth = 'Deny'
-            
-            # return the response
-            authResponse = { "principalId": "abc123", "policyDocument": { "Version": "2012-10-17", "Statement": [{"Action": "execute-api:Invoke", "Resource": "*", "Effect": auth}] }}
-            return authResponse
-
-  ApiAuthorizer:
-    DependsOn: 
-      - ApiGateway
-      - AuthorizerLambdaRole
-      - AuthorizerLambdaFunction
-    Type: AWS::ApiGateway::Authorizer
-    Properties:
-      Name: !Join ["_", [Ref: "Prefix", "BasicAuthorizer", Ref: "Env"]]
-      Type: TOKEN
-      AuthorizerCredentials: !GetAtt AuthorizerLambdaRole.Arn
-      IdentitySource: method.request.header.authorizationToken
-      AuthorizerUri: !Join ["", ["arn:aws:apigateway:" , Ref: AWS::Region , ":lambda:path/2015-03-31/functions/", !GetAtt AuthorizerLambdaFunction.Arn, "/invocations"] ]
-      AuthorizerResultTtlInSeconds: 300
-      RestApiId: !Ref ApiGateway
-
   RestMethod:
     DependsOn: 
       - LambdaPermission
       - LambdaFunction
       - ApiGateway
-      - AuthorizerLambdaFunction
     Type: AWS::ApiGateway::Method
     Properties:
       HttpMethod: !Ref ApiGatewayHTTPMethod
@@ -164,8 +98,7 @@ Resources:
           - lambdaArn: !GetAtt LambdaFunction.Arn
       ResourceId: !GetAtt ApiGateway.RootResourceId
       RestApiId: !Ref ApiGateway
-      AuthorizationType: CUSTOM
-      AuthorizerId: !Ref ApiAuthorizer
+      AuthorizationType: AWS_IAM
 
   # ApiGatewayDeployment:
   #   DependsOn: RestMethod
