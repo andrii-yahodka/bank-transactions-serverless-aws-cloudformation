@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS CloudFormation Sample Template DynamoDB_Secondary_Indexes: Create
+  a DynamoDB table with local and global secondary indexes. **WARNING** This template
+  creates an Amazon DynamoDB table. You will be billed for the AWS resources used
+  if you create a stack from this template.'
+Metadata:
+  License: Apache-2.0
+Parameters:
+  ReadCapacityUnits:
+    Description: Provisioned read throughput
+    Type: Number
+    Default: '5'
+    MinValue: '1'
+    MaxValue: '10'
+    ConstraintDescription: must be between 1 and 10
+  WriteCapacityUnits:
+    Description: Provisioned write throughput
+    Type: Number
+    Default: '5'
+    MinValue: '1'
+    MaxValue: '10'
+    ConstraintDescription: must be between 1 and 10
+Resources:
+  TransactionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: transaction_id
+        AttributeType: S
+      - AttributeName: customer_id
+        AttributeType: S
+      - AttributeName: payment_method
+        AttributeType: S
+      - AttributeName: status
+        AttributeType: S
+      KeySchema:
+      - AttributeName: transaction_id
+        KeyType: HASH
+      - AttributeName: customer_id
+        KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits:
+          Ref: ReadCapacityUnits
+        WriteCapacityUnits:
+          Ref: WriteCapacityUnits
+      LocalSecondaryIndexes:
+      - IndexName: StatusIndex
+        KeySchema:
+        - AttributeName: transaction_id
+          KeyType: HASH
+        - AttributeName: status
+          KeyType: RANGE
+        Projection:
+          ProjectionType: KEYS_ONLY
+      GlobalSecondaryIndexes:
+      - IndexName: PaymentMethodIndex
+        KeySchema:
+        - AttributeName: customer_id
+          KeyType: HASH
+        - AttributeName: payment_method
+          KeyType: RANGE
+        Projection:
+          ProjectionType: KEYS_ONLY
+        ProvisionedThroughput:
+          ReadCapacityUnits:
+            Ref: ReadCapacityUnits
+          WriteCapacityUnits:
+            Ref: WriteCapacityUnits
+Outputs:
+  TableName:
+    Description: Name of the newly created DynamoDB table
+    Value:
+      Ref: TransactionsTable

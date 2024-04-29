@@ -1,0 +1,2 @@
+aws cloudformation package --template-file dynamodb_template.yaml --s3-bucket serverless-payment-service --output-template-file dynamodb_template.packaged.yaml
+aws cloudformation deploy --template-file dynamodb_template.packaged.yaml --stack-name ServerlessPaymentServiceStack --capabilities=CAPABILITY_NAMED_IAM
