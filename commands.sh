@@ -9,3 +9,7 @@ aws cloudformation deploy --template-file lambda_function_template.packaged.yaml
 
 aws cloudformation package --template-file api_gateway_v2_template.yaml --s3-bucket serverless-payment-service --output-template-file api_gateway_v2_template.packaged.yaml
 aws cloudformation deploy --template-file api_gateway_v2_template.packaged.yaml --stack-name ClientsStack --capabilities=CAPABILITY_NAMED_IAM
+
+sam init
+sam build
+sam deploy --guided

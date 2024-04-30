@@ -2,12 +2,12 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: API Gateway, Authorizer and Lambda function with IAM role & policy
 
 Parameters:
-  ApiGatewayHTTPMethod:
-    Type: String
-    Default: POST
   GetHTTPMethod:
     Type: String
     Default: GET
+  PostHTTPMethod:
+    Type: String
+    Default: POST
   Env:
     Type: String
     Default: dev
@@ -74,39 +74,33 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
 
-  LambdaFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Join ["_", [Ref: "Prefix", Ref: "Env"]]
-      Description: !Join ["_", [Ref: "Prefix","LambdaFunction", Ref: "Env"]]
-      Runtime: python3.8
-      MemorySize: 128
-      Role: !GetAtt LambdaRole.Arn
-      Handler: index.handler
-      Code:
-        ZipFile: |
-          import json
-
-          def handler(event, context):
-              return {
-                  'statusCode': 200,
-                  'body': 'Hello, world!'
-              }
+  # LambdaFunction:
+  #   Type: AWS::Lambda::Function
+  #   Properties:
+  #     FunctionName: !Join ["_", [Ref: "Prefix", Ref: "Env"]]
+  #     Description: !Join ["_", [Ref: "Prefix","LambdaFunction", Ref: "Env"]]
+  #     Runtime: ruby3.3
+  #     MemorySize: 128
+  #     Timeout: 30
+  #     Role: !GetAtt LambdaRole.Arn
+  #     CodeUri: arn:aws:s3:::robot-dreams-lesson-3/lambda_function.zip
+  #     Handler: index.lambda_handler
 
   LambdaPermission:
-    DependsOn: LambdaFunction
+    # DependsOn: LambdaFunction
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !GetAtt LambdaFunction.Arn
+      FunctionName: arn:aws:lambda:eu-central-1:471112870134:function:GenerateClientFunction
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceArn: !Join ["", ["arn:aws:execute-api:", Ref: "AWS::Region", ":", Ref: "AWS::AccountId", ":", Ref: "ApiGateway", "/*"]]
 
   LambdaLogGroup:
-    DependsOn: LambdaFunction
+    # DependsOn: LambdaFunction
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Join ['', ['/aws/lambda/', !Ref LambdaFunction]]
+      # LogGroupName: !Join ['', ['/aws/lambda/', !Ref LambdaFunction]]
+      LogGroupName: !Join ['', ['/aws/lambda/']]
       RetentionInDays: 30
 
   ApiGateway:
@@ -118,39 +112,21 @@ Resources:
         Types:
           - REGIONAL
 
-  RestMethod:
-    DependsOn: 
-      - LambdaPermission
-      - LambdaFunction
-      - ApiGateway
-    Type: AWS::ApiGateway::Method
-    Properties:
-      HttpMethod: !Ref ApiGatewayHTTPMethod
-      Integration:
-        IntegrationHttpMethod: POST
-        Type: AWS_PROXY
-        Uri: !Sub
-          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
-          - lambdaArn: !GetAtt LambdaFunction.Arn
-      ResourceId: !GetAtt ApiGateway.RootResourceId
-      RestApiId: !Ref ApiGateway
-      AuthorizationType: AWS_IAM
-
-  GetMethodApiGatewayResource:
+  ApiGatewayResource:
     Type: AWS::ApiGateway::Resource
     Properties:
       RestApiId: !Ref ApiGateway
       ParentId: !GetAtt ApiGateway.RootResourceId
       PathPart: 'clients'
 
-  GetMethod:
+  IndexMethod:
     DependsOn:
-      - GetMethodApiGatewayResource
+      - ApiGatewayResource
       - DynamoDbRole
     Type: AWS::ApiGateway::Method
     Properties:
       HttpMethod: !Ref GetHTTPMethod
-      ResourceId: !Ref GetMethodApiGatewayResource
+      ResourceId: !Ref ApiGatewayResource
       RestApiId: !Ref ApiGateway
       AuthorizationType: NONE
       Integration:
@@ -185,6 +161,23 @@ Resources:
       MethodResponses:
           - StatusCode: 200
 
+  CreateMethod:
+    DependsOn: 
+      - LambdaPermission
+      # - LambdaFunction
+      - ApiGateway
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: !Ref PostHTTPMethod
+      ResourceId: !Ref ApiGatewayResource
+      RestApiId: !Ref ApiGateway
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: arn:aws:lambda:eu-central-1:471112870134:function:GenerateClientFunction
 
   # ApiGatewayDeployment:
   #   DependsOn: RestMethod

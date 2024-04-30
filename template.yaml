@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  GenerateClientFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GenerateClientFunction
+      CodeUri: lambda_function/
+      Handler: app.lambda_handler
+      Runtime: ruby3.3
+      Timeout: 30
+      Role: arn:aws:iam::471112870134:role/service-role/demo-lambda-role-bungmf6g
