@@ -2,14 +2,14 @@ require 'aws-sdk-s3'
 require 'aws-sdk-dynamodb'
 require 'random/formatter'
 
-class Item
+class Transaction
   def self.build
     {
-      id: SecureRandom.hex,
-      first_name: "First name - #{Random.new.alphanumeric(5)}",
-      last_name: "Last name - #{Random.new.alphanumeric(5)}",
-      position: "Position - #{Random.new.alphanumeric(5)}",
-      salary: Random.new.random_number(1000)
+      user_id:    SecureRandom.hex,
+      project_id: SecureRandom.hex,
+      amount:     Random.new.random_number(1000),
+      currency:   ['UAH', 'EUR', 'USD'].sample,
+      type:       ['monthly', 'yearly'].sample
     }
   end
 end
@@ -17,20 +17,20 @@ end
 class DynamoDb
   def initialize(item)
     @client     = Aws::DynamoDB::Client.new(region: 'eu-central-1')
-    @table_name = 'ClientsTable'
+    @table_name = 'TransactionsTable'
     @item       = item
   end
   
   def put_item
-    @client.put_item(table_name: 'ClientsTable', item: @item)
+    @client.put_item(table_name: @table_name, item: @item)
   end
 end
 
 class S3
   def initialize(item)
     @client = Aws::S3::Client.new(region: 'eu-central-1')
-    @bucket = 'robot-dreams-lesson-3'
-    @key    = "#{item[:id]}_credentials.txt"
+    @bucket = 'bank-transaction-invoices-andrii-yahodka'
+    @key    = "#{item[:user_id]}_#{item[:type]}_invoice_#{item[:project_id]}.txt"
   end
   
   def put_object
@@ -40,7 +40,7 @@ end
 
 
 def lambda_handler(event:, context:)
-  item = Item.build
+  item = Transaction.build
   
   DynamoDb.new(item).put_item
   S3.new(item).put_object
