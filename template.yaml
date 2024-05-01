@@ -198,4 +198,4 @@ Resources:
 
 Outputs:
   ApiInvokeURL:
-    Description: Invoke this URL in Postman or cURL to access the API Gateway
+    Description: Invoke URL in Postman or cURL to access the API Gateway
