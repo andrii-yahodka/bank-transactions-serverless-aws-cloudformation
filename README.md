@@ -1,1 +1,1 @@
-![infrastructure](https://github.com/andrii-yahodka/bank-transactions-serverless-aws-cloudformation/assets/31447820/28077444-a5d0-4585-819c-498dce9d0c00)
+![infrastructure](https://github.com/andrii-yahodka/bank-transactions-serverless-aws-cloudformation/assets/31447820/d519db98-2b6c-4396-92e3-4f5c92270601)
