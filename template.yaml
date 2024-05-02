@@ -198,4 +198,5 @@ Resources:
 
 Outputs:
   ApiInvokeURL:
+    Value: Value
     Description: Invoke URL in Postman or cURL to access the API Gateway
